@@ -3,7 +3,8 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
+#include <regex>
+#include <iostream>
 #include "linux_parser.h"
 
 using std::stof;
@@ -67,11 +68,69 @@ vector<int> LinuxParser::Pids() {
   return pids;
 }
 
+void removeSubstring(std::string& mainString, const std::string& substringToRemove) {
+    // Find the position of the substring in the main string
+    size_t pos = mainString.find(substringToRemove);
+
+    // Check if the substring is found
+    if (pos != std::string::npos) {
+        // Erase the substring from the main string
+        mainString.erase(pos, substringToRemove.length());
+    }
+}
+
 // TODO: Read and return the system memory utilization
-float LinuxParser::MemoryUtilization() { return 0.0; }
+float LinuxParser::MemoryUtilization() {   
+  string line;
+  string key;
+  string value;
+  long totalMemory = -1;
+  long availableMemory = -1;
+  float utilizationPercent = -1.0;
+  std::ifstream filestream(kProcDirectory + kMeminfoFilename);
+  if (filestream.is_open()) {
+    while (std::getline(filestream, line)) {
+      line.erase(std::remove(line.begin(), line.end(), ' '),line.end());
+      std::replace(line.begin(), line.end(), ':', ' ');
+      std::replace(line.begin(), line.end(), '"', ' ');
+      std::istringstream linestream(line);
+      while (linestream >> key >> value) {
+        if (key == "MemTotal") {
+          removeSubstring(value, "kB");
+          if (std::all_of(value.begin(), value.end(), isdigit)) {
+            totalMemory = std::stoi(value);
+          }
+        }        
+        if (key == "MemAvailable") {
+          removeSubstring(value, "kB");
+          if (std::all_of(value.begin(), value.end(), isdigit)) {
+            availableMemory = std::stoi(value);
+          }
+        }
+        if (totalMemory != -1 && availableMemory != -1){
+          utilizationPercent = (float(totalMemory - availableMemory)/totalMemory) ; 
+          return utilizationPercent;
+        }
+      }
+    }
+  }
+  return utilizationPercent; }
 
 // TODO: Read and return the system uptime
-long LinuxParser::UpTime() { return 0; }
+long int LinuxParser::UpTime() { 
+  long int uptime;
+  double idleTime;
+  std::ifstream uptimeFile("/proc/uptime");
+  if (uptimeFile.is_open()) {
+      std::string line;
+      std::getline(uptimeFile, line);
+      std::istringstream iss(line);
+      
+      iss >> uptime >> idleTime;
+      uptimeFile.close();
+  } 
+  return uptime;
+}
 
 // TODO: Read and return the number of jiffies for the system
 long LinuxParser::Jiffies() { return 0; }
@@ -87,13 +146,64 @@ long LinuxParser::ActiveJiffies() { return 0; }
 long LinuxParser::IdleJiffies() { return 0; }
 
 // TODO: Read and return CPU utilization
-vector<string> LinuxParser::CpuUtilization() { return {}; }
+vector<string> LinuxParser::CpuUtilization() { 
+  vector<string> usageData;
+  std::ifstream filestream(kProcDirectory + kStatFilename);
+  if (filestream.is_open()) {
+      std::string line;
+      std::getline(filestream, line);
+      std::istringstream iss(line);
+      // removeSubstring(iss, "cpu");
+      string num;
+      while (iss >> num) {
+        if(num!="cpu")
+          usageData.push_back(num);
+      }
+      filestream.close();
+    }
+    return usageData;
+  }
 
 // TODO: Read and return the total number of processes
-int LinuxParser::TotalProcesses() { return 0; }
+int LinuxParser::TotalProcesses() {   
+  int totalProcesses;
+  std::ifstream filestream(kProcDirectory + kStatFilename);
+  if (filestream.is_open()) {
+    std::string line;
+    while (std::getline(filestream, line)) {
+      
+      std::istringstream iss(line);
+      string field;
+      while (iss >> field) {
+        if(field!="processes")
+          break;
+        iss>>totalProcesses;
+        return totalProcesses;
+      }
+    }
+  }
+  return totalProcesses;
+}
 
 // TODO: Read and return the number of running processes
-int LinuxParser::RunningProcesses() { return 0; }
+int LinuxParser::RunningProcesses() { 
+  int runningProcesses;
+  std::ifstream filestream(kProcDirectory + kStatFilename);
+  if (filestream.is_open()) {
+    std::string line;
+    while (std::getline(filestream, line)) {
+      std::istringstream iss(line);
+      string field;
+      while (iss >> field) {
+        if(field!="procs_running")
+          break;
+        iss>>runningProcesses;
+        return runningProcesses;
+      }
+    }
+  }
+  return runningProcesses;
+}
 
 // TODO: Read and return the command associated with a process
 // REMOVE: [[maybe_unused]] once you define the function
@@ -114,3 +224,12 @@ string LinuxParser::User(int pid[[maybe_unused]]) { return string(); }
 // TODO: Read and return the uptime of a process
 // REMOVE: [[maybe_unused]] once you define the function
 long LinuxParser::UpTime(int pid[[maybe_unused]]) { return 0; }
+
+
+// int main(){
+//   vector<string> a = LinuxParser::CpuUtilization();
+//   for(auto i:a){
+//     std::cout<<"Answere "<<i<<"\n";
+//   }
+//   // std::cout<<"Answer "<<a<<"\n";
+// }
