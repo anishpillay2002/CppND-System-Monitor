@@ -11,6 +11,8 @@ using std::string;
 string Format::ElapsedTime(long seconds) { 
     int h = seconds/3600;
     int m = (seconds%3600)/60;
-    int s = seconds%60;
-    string output = std::to_string(h)+":"+std::to_string(m)+":"+std::to_string(s);
-    return output; }
+    string s = std::to_string( seconds%60);
+    s = s.insert(0, 2 - s.length(), '0');
+    string output = std::to_string(h)+":"+std::to_string(m)+":"+s;
+    return output; 
+}
