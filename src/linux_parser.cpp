@@ -5,6 +5,7 @@
 #include <vector>
 #include <regex>
 #include <iostream>
+#include <iomanip>
 #include "linux_parser.h"
 
 using std::stof;
@@ -208,11 +209,42 @@ int LinuxParser::RunningProcesses() {
 
 // TODO: Read and return the command associated with a process
 // REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Command(int pid[[maybe_unused]]) { return string(); }
+string LinuxParser::Command(int pid) { 
+  std::string line = " ";
+  std::ifstream filestream(kProcDirectory + std::to_string(pid) +  kCmdlineFilename);
+  if (filestream.is_open()) {
+    
+    while (std::getline(filestream, line)) {
+      return line;
+    }
+  }
+  return line;
+}
 
 // TODO: Read and return the memory used by a process
 // REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Ram(int pid[[maybe_unused]]) { return string(); }
+string LinuxParser::Ram(int pid) {   
+  string mem_util;
+  int decimalPoints = 2;
+  std::ifstream filestream(kProcDirectory + std::to_string(pid) + kStatusFilename);
+  if (filestream.is_open()) {
+    std::string line;
+    while (std::getline(filestream, line)) {
+      std::istringstream iss(line);
+      string field;
+      while (iss >> field) {
+        if(field!="VmSize:")
+          break;
+        iss>>mem_util;
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(decimalPoints) << std::stof(mem_util)/1000;
+        mem_util = oss.str();
+        return mem_util;
+      }
+    }
+  }
+  return mem_util;
+}
 
 // TODO: Read and return the user ID associated with a process
 // REMOVE: [[maybe_unused]] once you define the function

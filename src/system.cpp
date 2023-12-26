@@ -29,8 +29,9 @@ vector<Process>& System::Processes() {
         Process tmpProcessObj = Process();
         tmpProcessObj.setPid(pid);
         tmpProcessObj.setUser(LinuxParser::User(pid));
-        tmpProcessObj.setCmd(LinuxParser::Command(pid));
         tmpProcessObj.setCpuUtil(tmpProcessObj.CpuUtilization());
+        tmpProcessObj.setCmd(LinuxParser::Command(pid));
+        tmpProcessObj.setRam(LinuxParser::Ram(pid));
         processes_.push_back(tmpProcessObj);
     }
     
