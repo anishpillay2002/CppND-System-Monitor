@@ -291,8 +291,9 @@ string LinuxParser::User(int pid) {
 float LinuxParser::UpTime(int pid) {
   vector<string> allStats =LinuxParser::CpuStats( pid);
   float hertz = sysconf(_SC_CLK_TCK);
-  return std::stof(allStats[21])/hertz;
-
+  float uptime = std::stof(allStats[21]);
+  int upTimePid = UpTime() - (uptime/hertz);
+  return upTimePid;
 }
 
 vector<string> LinuxParser::CpuStats(int pid){
